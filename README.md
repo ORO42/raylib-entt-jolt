@@ -20,3 +20,5 @@ make
 [ ] Fix character capsule drawing (should be same as capsule physics body drawing)
 [ ] Fix character controller jump
 [ ] Fix character controller move directions
+[ ] Fix when physics capsule is pushed, looks like its falling off an invisible object
+[ ] Draw position debug markers

@@ -280,7 +280,7 @@ int main()
     bodies.push_back({sphere2, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.7f, 0.0f});
 
     // Create a test capsule
-    JPH::BodyID capsule1 = physicsCreateDynamicCapsule(physicsWorld, {-4.0f, 15.0f, 0.0f}, 0.5f, 1.0f);
+    JPH::BodyID capsule1 = physicsCreateDynamicCapsule(physicsWorld, {-5.0f, 15.0f, 0.0f}, 0.5f, 1.0f);
     bodies.push_back({capsule1, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 1.0f});
 
     // Create a character controller
