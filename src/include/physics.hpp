@@ -4,6 +4,7 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Body/BodyInterface.h>
 #include <Jolt/Physics/Body/BodyID.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
 #include "raylib.h"
 #include "raymath.h"
 
@@ -19,6 +20,12 @@ struct PhysicsWorld
     void *objectVsObjectLayerFilter;
     float fixedTimestep;
     float accumulator;
+};
+
+// Character controller handle
+struct PhysicsCharacter
+{
+    JPH::CharacterVirtual *character;
 };
 
 // Initialize the physics world
@@ -40,7 +47,7 @@ JPH::BodyID physicsCreateDynamicBox(PhysicsWorld *world, Vector3 position, Vecto
 JPH::BodyID physicsCreateDynamicSphere(PhysicsWorld *world, Vector3 position, float radius);
 
 // Create a dynamic capsule
-JPH::BodyID physicsCreateDynamicCapsule(PhysicsWorld *world, Vector3 position, float radius, float height);
+JPH::BodyID physicsCreateDynamicCapsule(PhysicsWorld *world, Vector3 position, float radius, float halfHeight);
 
 // Get position of a body
 Vector3 physicsGetPosition(PhysicsWorld *world, JPH::BodyID bodyId);
@@ -59,3 +66,35 @@ bool physicsIsActive(PhysicsWorld *world, JPH::BodyID bodyId);
 
 // Remove and destroy a body
 void physicsDestroyBody(PhysicsWorld *world, JPH::BodyID bodyId);
+
+// --- Character Controller Functions ---
+
+// Create a character controller (capsule shape)
+PhysicsCharacter *physicsCreateCharacter(PhysicsWorld *world, Vector3 position, float radius, float height);
+
+// Destroy character controller
+void physicsDestroyCharacter(PhysicsCharacter *character);
+
+// Update character controller (call after physicsUpdate)
+void physicsUpdateCharacter(PhysicsWorld *world, PhysicsCharacter *character, float deltaTime);
+
+// Set character linear velocity
+void physicsCharacterSetVelocity(PhysicsCharacter *character, Vector3 velocity);
+
+// Get character linear velocity
+Vector3 physicsCharacterGetVelocity(PhysicsCharacter *character);
+
+// Get character position
+Vector3 physicsCharacterGetPosition(PhysicsCharacter *character);
+
+// Set character position
+void physicsCharacterSetPosition(PhysicsCharacter *character, Vector3 position);
+
+// Check if character is on ground
+bool physicsCharacterIsOnGround(PhysicsCharacter *character);
+
+// Get character up direction
+Vector3 physicsCharacterGetUp(PhysicsCharacter *character);
+
+// Set character up direction (for gravity)
+void physicsCharacterSetUp(PhysicsCharacter *character, Vector3 up);

@@ -115,6 +115,70 @@ void sControlFreecam(GameState &gameState)
     cam.camera.target = Vector3Add(cam.camera.position, lookDir);
 }
 
+// Example character controller system
+void sControlCharacter(PhysicsCharacter *character, float deltaTime)
+{
+    Vector3 velocity = physicsCharacterGetVelocity(character);
+
+    // Movement input (horizontal only, preserve vertical velocity)
+    Vector3 moveDir = {0.0f, 0.0f, 0.0f};
+    float moveSpeed = 5.0f;
+
+    if (IsKeyDown(KEY_W))
+        moveDir.z += 1.0f;
+    if (IsKeyDown(KEY_S))
+        moveDir.z -= 1.0f;
+    if (IsKeyDown(KEY_A))
+        moveDir.x -= 1.0f;
+    if (IsKeyDown(KEY_D))
+        moveDir.x += 1.0f;
+
+    if (Vector3Length(moveDir) > 0.0f)
+        moveDir = Vector3Normalize(moveDir);
+
+    // Apply horizontal movement
+    velocity.x = moveDir.x * moveSpeed;
+    velocity.z = moveDir.z * moveSpeed;
+
+    // Jump
+    if (IsKeyPressed(KEY_SPACE) && physicsCharacterIsOnGround(character))
+    {
+        velocity.y = 5.0f; // Jump impulse
+    }
+
+    physicsCharacterSetVelocity(character, velocity);
+}
+
+// Draw character
+void sDrawCharacter(PhysicsCharacter *character)
+{
+    Vector3 pos = physicsCharacterGetPosition(character);
+
+    // Draw capsule (approximate, adjust sizes to match your character)
+    float radius = 0.5f;
+    float halfHeight = 0.5f;
+
+    // Draw cylinder body
+    DrawCylinderEx(
+        Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+        Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+        radius, radius, 16, YELLOW);
+
+    // Draw top hemisphere
+    DrawSphereEx(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+                 radius, 16, 8, YELLOW);
+
+    // Draw bottom hemisphere
+    DrawSphereEx(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+                 radius, 16, 8, YELLOW);
+
+    // Draw wireframe
+    DrawCylinderWiresEx(
+        Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+        Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+        radius, radius, 16, ORANGE);
+}
+
 void sDrawFreeCamReticle()
 {
     int windowWidth = GetScreenWidth();
@@ -219,13 +283,20 @@ int main()
     JPH::BodyID capsule1 = physicsCreateDynamicCapsule(physicsWorld, {-4.0f, 15.0f, 0.0f}, 0.5f, 1.0f);
     bodies.push_back({capsule1, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 1.0f});
 
+    // Create a character controller
+    PhysicsCharacter *player = physicsCreateCharacter(physicsWorld, {0.0f, 5.0f, 0.0f}, 0.5f, 2.0f);
+
     while (!WindowShouldClose())
     {
         float dt = GetFrameTime();
 
         // Update
-        sControlFreecam(gameState);
         physicsUpdate(physicsWorld, dt);
+
+        sControlCharacter(player, dt);
+        physicsUpdateCharacter(physicsWorld, player, dt);
+
+        // sControlFreecam(gameState);
 
         // Spawn new sphere on key press
         if (IsKeyPressed(KEY_B))
@@ -254,6 +325,7 @@ int main()
         BeginMode3D(gameState.freeCam.camera);
         DrawGrid(20, 1.0f);
         sDrawPhysicsBodies(physicsWorld, bodies);
+        sDrawCharacter(player);
         EndMode3D();
 
         DrawFPS(10, 10);
@@ -265,6 +337,7 @@ int main()
     }
 
     // Cleanup
+    physicsDestroyCharacter(player);
     physicsShutdown(physicsWorld);
     CloseWindow();
     return 0;

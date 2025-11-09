@@ -9,6 +9,7 @@
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
 
 #include <iostream>
 #include <thread>
@@ -235,9 +236,9 @@ BodyID physicsCreateDynamicSphere(PhysicsWorld *world, Vector3 position, float r
     return bodyId;
 }
 
-BodyID physicsCreateDynamicCapsule(PhysicsWorld *world, Vector3 position, float radius, float height)
+BodyID physicsCreateDynamicCapsule(PhysicsWorld *world, Vector3 position, float radius, float halfHeight)
 {
-    CapsuleShapeSettings shapeSettings(radius, height);
+    CapsuleShapeSettings shapeSettings(halfHeight, radius);
     ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
     ShapeRefC shape = shapeResult.Get();
 
@@ -279,4 +280,97 @@ void physicsDestroyBody(PhysicsWorld *world, BodyID bodyId)
 {
     world->bodyInterface->RemoveBody(bodyId);
     world->bodyInterface->DestroyBody(bodyId);
+}
+
+PhysicsCharacter *physicsCreateCharacter(PhysicsWorld *world, Vector3 position, float radius, float height)
+{
+    PhysicsCharacter *character = new PhysicsCharacter();
+
+    // Create character settings
+    JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
+
+    // Create capsule shape for character
+    settings->mShape = new JPH::CapsuleShape(height * 0.5f, radius);
+    settings->mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
+    settings->mMass = 70.0f; // 70kg
+    settings->mMaxStrength = 100.0f;
+    settings->mCharacterPadding = 0.02f;
+    settings->mPenetrationRecoverySpeed = 1.0f;
+    settings->mPredictiveContactDistance = 0.1f;
+
+    // Support all layers for character collision
+    settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -1.0f);
+
+    // Create the character
+    character->character = new JPH::CharacterVirtual(
+        settings,
+        JPH::RVec3(position.x, position.y, position.z),
+        JPH::Quat::sIdentity(),
+        0, // User data
+        world->physicsSystem);
+
+    return character;
+}
+
+void physicsDestroyCharacter(PhysicsCharacter *character)
+{
+    if (character)
+    {
+        delete character->character;
+        delete character;
+    }
+}
+
+void physicsUpdateCharacter(PhysicsWorld *world, PhysicsCharacter *character, float deltaTime)
+{
+    // Update character (this handles collision detection and response)
+    JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
+
+    character->character->ExtendedUpdate(
+        deltaTime,
+        JPH::Vec3(0, -9.81f, 0), // Gravity
+        updateSettings,
+        world->physicsSystem->GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
+        world->physicsSystem->GetDefaultLayerFilter(Layers::MOVING),
+        {},
+        {},
+        *static_cast<JPH::TempAllocator *>(world->tempAllocator));
+}
+
+void physicsCharacterSetVelocity(PhysicsCharacter *character, Vector3 velocity)
+{
+    character->character->SetLinearVelocity(JPH::Vec3(velocity.x, velocity.y, velocity.z));
+}
+
+Vector3 physicsCharacterGetVelocity(PhysicsCharacter *character)
+{
+    JPH::Vec3 vel = character->character->GetLinearVelocity();
+    return {vel.GetX(), vel.GetY(), vel.GetZ()};
+}
+
+Vector3 physicsCharacterGetPosition(PhysicsCharacter *character)
+{
+    JPH::RVec3 pos = character->character->GetPosition();
+    return {(float)pos.GetX(), (float)pos.GetY(), (float)pos.GetZ()};
+}
+
+void physicsCharacterSetPosition(PhysicsCharacter *character, Vector3 position)
+{
+    character->character->SetPosition(JPH::RVec3(position.x, position.y, position.z));
+}
+
+bool physicsCharacterIsOnGround(PhysicsCharacter *character)
+{
+    return character->character->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround;
+}
+
+Vector3 physicsCharacterGetUp(PhysicsCharacter *character)
+{
+    JPH::Vec3 up = character->character->GetUp();
+    return {up.GetX(), up.GetY(), up.GetZ()};
+}
+
+void physicsCharacterSetUp(PhysicsCharacter *character, Vector3 up)
+{
+    character->character->SetUp(JPH::Vec3(up.x, up.y, up.z));
 }
