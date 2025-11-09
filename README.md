@@ -13,3 +13,10 @@ make
 `make && ./emergent-command`
 
 - Make sure cpp version is set in `c_cpp_properties.json`
+
+# TODO
+
+[ ] Make capsule heights consistent
+[ ] Fix character capsule drawing (should be same as capsule physics body drawing)
+[ ] Fix character controller jump
+[ ] Fix character controller move directions
