@@ -39,13 +39,22 @@ struct ECSState
     entt::registry registry;
 };
 
+// Body type enum
+enum class BodyType
+{
+    Box,
+    Sphere,
+    Capsule
+};
+
 // Simple struct to track physics bodies for rendering
 struct PhysicsBody
 {
     JPH::BodyID id;
+    BodyType type;
     Vector3 halfExtents; // For boxes
-    float radius;        // For spheres
-    bool isSphere;
+    float radius;        // For spheres and capsules
+    float height;        // For capsules
 };
 
 void sControlFreecam(GameState &gameState)
@@ -130,16 +139,49 @@ void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bod
         QuaternionToAxisAngle(rot, &axis, &angle);
         angle = angle * RAD2DEG;
 
-        if (body.isSphere)
+        switch (body.type)
         {
-            DrawSphereEx(pos, body.radius, 16, 16, BLUE);
+        case BodyType::Sphere:
+            // DrawSphereEx(pos, body.radius, 16, 16, BLUE);
             DrawSphereWires(pos, body.radius, 16, 16, DARKBLUE);
-        }
-        else
-        {
-            // Draw box with rotation
-            DrawCubeV(pos, Vector3Scale(body.halfExtents, 2.0f), RED);
+            break;
+
+        case BodyType::Box:
+            // DrawCubeV(pos, Vector3Scale(body.halfExtents, 2.0f), RED);
             DrawCubeWiresV(pos, Vector3Scale(body.halfExtents, 2.0f), MAROON);
+            break;
+
+        case BodyType::Capsule:
+        {
+            // Jolt's capsule: height parameter is HALF the cylinder height
+            // Total capsule height = 2 * halfHeight + 2 * radius
+            float halfHeight = body.height; // This is what Jolt stores
+
+            // Draw cylinder body (the cylindrical portion between the hemispheres)
+            // DrawCylinderEx(
+            //     Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+            //     Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+            //     body.radius, body.radius, 16, GREEN);
+
+            // // Draw top hemisphere
+            // DrawSphereEx(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+            //              body.radius, 16, 8, GREEN);
+
+            // // Draw bottom hemisphere
+            // DrawSphereEx(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+            //              body.radius, 16, 8, GREEN);
+
+            // Draw wireframe
+            DrawCylinderWiresEx(
+                Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+                Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+                body.radius, body.radius, 16, DARKGREEN);
+            DrawSphereWires(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+                            body.radius, 8, 8, DARKGREEN);
+            DrawSphereWires(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+                            body.radius, 8, 8, DARKGREEN);
+            break;
+        }
         }
     }
 }
@@ -148,7 +190,7 @@ int main()
 {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE);
     InitWindow(800, 450, "emergent-command");
-    SetTargetFPS(60);
+    // SetTargetFPS(60);
     SetMousePosition(GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f);
     DisableCursor();
 
@@ -161,17 +203,21 @@ int main()
 
     // Create floor
     JPH::BodyID floorId = physicsCreateStaticBox(physicsWorld, {0.0f, -1.0f, 0.0f}, {50.0f, 1.0f, 50.0f});
-    bodies.push_back({floorId, {50.0f, 1.0f, 50.0f}, 0.0f, false});
+    bodies.push_back({floorId, BodyType::Box, {50.0f, 1.0f, 50.0f}, 0.0f, 0.0f});
 
     // Create some test objects
     JPH::BodyID sphere1 = physicsCreateDynamicSphere(physicsWorld, {0.0f, 10.0f, 0.0f}, 0.5f);
-    bodies.push_back({sphere1, {0.0f, 0.0f, 0.0f}, 0.5f, true});
+    bodies.push_back({sphere1, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.5f, 0.0f});
 
     JPH::BodyID box1 = physicsCreateDynamicBox(physicsWorld, {2.0f, 15.0f, 0.0f}, {0.5f, 0.5f, 0.5f});
-    bodies.push_back({box1, {0.5f, 0.5f, 0.5f}, 0.0f, false});
+    bodies.push_back({box1, BodyType::Box, {0.5f, 0.5f, 0.5f}, 0.0f, 0.0f});
 
     JPH::BodyID sphere2 = physicsCreateDynamicSphere(physicsWorld, {-2.0f, 20.0f, 0.0f}, 0.7f);
-    bodies.push_back({sphere2, {0.0f, 0.0f, 0.0f}, 0.7f, true});
+    bodies.push_back({sphere2, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.7f, 0.0f});
+
+    // Create a test capsule
+    JPH::BodyID capsule1 = physicsCreateDynamicCapsule(physicsWorld, {-4.0f, 15.0f, 0.0f}, 0.5f, 1.0f);
+    bodies.push_back({capsule1, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 1.0f});
 
     while (!WindowShouldClose())
     {
@@ -188,7 +234,17 @@ int main()
                 physicsWorld,
                 Vector3Add(gameState.freeCam.camera.position, {0.0f, 2.0f, 0.0f}),
                 0.5f);
-            bodies.push_back({newSphere, {0.0f, 0.0f, 0.0f}, 0.5f, true});
+            bodies.push_back({newSphere, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.5f, 0.0f});
+        }
+
+        // Spawn new capsule on key press
+        if (IsKeyPressed(KEY_C))
+        {
+            JPH::BodyID newCapsule = physicsCreateDynamicCapsule(
+                physicsWorld,
+                Vector3Add(gameState.freeCam.camera.position, {0.0f, 2.0f, 0.0f}),
+                0.5f, 1.5f);
+            bodies.push_back({newCapsule, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 1.5f});
         }
 
         // Draw
@@ -202,6 +258,8 @@ int main()
 
         DrawFPS(10, 10);
         DrawText("Press B to spawn sphere", 10, 30, 20, DARKGRAY);
+        DrawText("Press C to spawn capsule", 10, 50, 20, DARKGRAY);
+        DrawText(TextFormat("Spheres spawned: %d", bodies.size() - 1), 10, 70, 20, DARKGRAY);
         sDrawFreeCamReticle();
         EndDrawing();
     }

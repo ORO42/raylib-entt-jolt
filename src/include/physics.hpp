@@ -39,6 +39,9 @@ JPH::BodyID physicsCreateDynamicBox(PhysicsWorld *world, Vector3 position, Vecto
 // Create a dynamic sphere
 JPH::BodyID physicsCreateDynamicSphere(PhysicsWorld *world, Vector3 position, float radius);
 
+// Create a dynamic capsule
+JPH::BodyID physicsCreateDynamicCapsule(PhysicsWorld *world, Vector3 position, float radius, float height);
+
 // Get position of a body
 Vector3 physicsGetPosition(PhysicsWorld *world, JPH::BodyID bodyId);
 

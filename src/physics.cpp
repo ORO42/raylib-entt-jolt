@@ -7,6 +7,7 @@
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 
 #include <iostream>
@@ -224,6 +225,19 @@ BodyID physicsCreateDynamicBox(PhysicsWorld *world, Vector3 position, Vector3 ha
 BodyID physicsCreateDynamicSphere(PhysicsWorld *world, Vector3 position, float radius)
 {
     SphereShapeSettings shapeSettings(radius);
+    ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+    ShapeRefC shape = shapeResult.Get();
+
+    BodyCreationSettings bodySettings(shape, RVec3(position.x, position.y, position.z),
+                                      Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+
+    BodyID bodyId = world->bodyInterface->CreateAndAddBody(bodySettings, EActivation::Activate);
+    return bodyId;
+}
+
+BodyID physicsCreateDynamicCapsule(PhysicsWorld *world, Vector3 position, float radius, float height)
+{
+    CapsuleShapeSettings shapeSettings(radius, height);
     ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
     ShapeRefC shape = shapeResult.Get();
 
