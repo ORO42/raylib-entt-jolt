@@ -70,7 +70,7 @@ void physicsDestroyBody(PhysicsWorld *world, JPH::BodyID bodyId);
 // --- Character Controller Functions ---
 
 // Create a character controller (capsule shape)
-PhysicsCharacter *physicsCreateCharacter(PhysicsWorld *world, Vector3 position, float radius, float height);
+PhysicsCharacter *physicsCreateCharacter(PhysicsWorld *world, Vector3 position, float radius, float halfHeight);
 
 // Destroy character controller
 void physicsDestroyCharacter(PhysicsCharacter *character);
@@ -98,3 +98,9 @@ Vector3 physicsCharacterGetUp(PhysicsCharacter *character);
 
 // Set character up direction (for gravity)
 void physicsCharacterSetUp(PhysicsCharacter *character, Vector3 up);
+
+// Get character shape radius
+float physicsCharacterGetRadius(PhysicsCharacter *character);
+
+// Get character shape half height (cylinder portion only, not including spherical caps)
+float physicsCharacterGetHalfHeight(PhysicsCharacter *character);

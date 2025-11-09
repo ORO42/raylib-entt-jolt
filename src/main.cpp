@@ -150,33 +150,52 @@ void sControlCharacter(PhysicsCharacter *character, float deltaTime)
 }
 
 // Draw character
-void sDrawCharacter(PhysicsCharacter *character)
+void sDrawCharacter(PhysicsCharacter *character, bool solid)
 {
     Vector3 pos = physicsCharacterGetPosition(character);
 
-    // Draw capsule (approximate, adjust sizes to match your character)
-    float radius = 0.5f;
-    float halfHeight = 0.5f;
+    // Get actual dimensions from the character
+    float radius = physicsCharacterGetRadius(character);
+    float halfHeight = physicsCharacterGetHalfHeight(character);
 
-    // Draw cylinder body
-    DrawCylinderEx(
-        Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
-        Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-        radius, radius, 16, YELLOW);
+    // Calculate actual top and bottom positions
+    float bottomY = pos.y - (halfHeight + radius);
+    float topY = pos.y + (halfHeight + radius);
 
-    // Draw top hemisphere
-    DrawSphereEx(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-                 radius, 16, 8, YELLOW);
+    if (solid)
+    {
+        // Draw cylinder body
+        DrawCylinderEx(
+            Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+            Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+            radius, radius, 16, YELLOW);
 
-    // Draw bottom hemisphere
-    DrawSphereEx(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
-                 radius, 16, 8, YELLOW);
+        // Draw top hemisphere
+        DrawSphereEx(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+                     radius, 16, 8, YELLOW);
+
+        // Draw bottom hemisphere
+        DrawSphereEx(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+                     radius, 16, 8, YELLOW);
+    }
 
     // Draw wireframe
     DrawCylinderWiresEx(
         Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
         Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-        radius, radius, 16, ORANGE);
+        radius, radius, 16, DARKGREEN);
+
+    DrawSphereWires(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+                    radius, 8, 8, DARKGREEN);
+
+    DrawSphereWires(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+                    radius, 8, 8, DARKGREEN);
+
+    DrawSphereWires(pos, 0.1f, 4, 4, ORANGE); // Draw position marker
+
+    // Draw small crosses at top and bottom of the capsule
+    DrawSphereWires({pos.x, bottomY, pos.z}, 0.05f, 4, 4, RED); // bottom
+    DrawSphereWires({pos.x, topY, pos.z}, 0.05f, 4, 4, RED);    // top
 }
 
 void sDrawFreeCamReticle()
@@ -190,7 +209,7 @@ void sDrawFreeCamReticle()
     DrawLineEx({center.x, center.y - halfLength}, {center.x, center.y + halfLength}, 1.0f, BLACK);
 }
 
-void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bodies)
+void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bodies, bool solid)
 {
     for (const auto &body : bodies)
     {
@@ -206,12 +225,18 @@ void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bod
         switch (body.type)
         {
         case BodyType::Sphere:
-            // DrawSphereEx(pos, body.radius, 16, 16, BLUE);
+            if (solid)
+            {
+                DrawSphereEx(pos, body.radius, 16, 16, BLUE);
+            }
             DrawSphereWires(pos, body.radius, 16, 16, DARKBLUE);
             break;
 
         case BodyType::Box:
-            // DrawCubeV(pos, Vector3Scale(body.halfExtents, 2.0f), RED);
+            if (solid)
+            {
+                DrawCubeV(pos, Vector3Scale(body.halfExtents, 2.0f), RED);
+            }
             DrawCubeWiresV(pos, Vector3Scale(body.halfExtents, 2.0f), MAROON);
             break;
 
@@ -221,32 +246,46 @@ void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bod
             // Total capsule height = 2 * halfHeight + 2 * radius
             float halfHeight = body.height; // This is what Jolt stores
 
-            // Draw cylinder body (the cylindrical portion between the hemispheres)
-            // DrawCylinderEx(
-            //     Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
-            //     Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-            //     body.radius, body.radius, 16, GREEN);
+            // debug after you get pos and have halfHeight and radius
+            float bottomY = pos.y - (halfHeight + body.radius);
+            float topY = pos.y + (halfHeight + body.radius);
 
-            // // Draw top hemisphere
-            // DrawSphereEx(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-            //              body.radius, 16, 8, GREEN);
+            if (solid)
+            {
+                // Draw cylinder body (the cylindrical portion between the hemispheres)
+                DrawCylinderEx(
+                    Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+                    Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+                    body.radius, body.radius, 16, GREEN);
 
-            // // Draw bottom hemisphere
-            // DrawSphereEx(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
-            //              body.radius, 16, 8, GREEN);
+                // Draw top hemisphere
+                DrawSphereEx(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
+                             body.radius, 16, 8, GREEN);
+
+                // Draw bottom hemisphere
+                DrawSphereEx(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
+                             body.radius, 16, 8, GREEN);
+            }
 
             // Draw wireframe
             DrawCylinderWiresEx(
                 Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
                 Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
                 body.radius, body.radius, 16, DARKGREEN);
+
             DrawSphereWires(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
                             body.radius, 8, 8, DARKGREEN);
+
             DrawSphereWires(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
                             body.radius, 8, 8, DARKGREEN);
+
+            // draw small crosses at top and bottom of the capsule
+            DrawSphereWires({pos.x, bottomY, pos.z}, 0.05f, 4, 4, RED); // bottom
+            DrawSphereWires({pos.x, topY, pos.z}, 0.05f, 4, 4, RED);    // top
             break;
         }
         }
+        DrawSphereWires(pos, 0.1f, 4, 4, ORANGE); // Draw position marker
     }
 }
 
@@ -280,11 +319,11 @@ int main()
     bodies.push_back({sphere2, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.7f, 0.0f});
 
     // Create a test capsule
-    JPH::BodyID capsule1 = physicsCreateDynamicCapsule(physicsWorld, {-5.0f, 15.0f, 0.0f}, 0.5f, 1.0f);
-    bodies.push_back({capsule1, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 1.0f});
+    JPH::BodyID capsule1 = physicsCreateDynamicCapsule(physicsWorld, {-5.0f, 20.0f, 0.0f}, 0.5f, 0.5f);
+    bodies.push_back({capsule1, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 0.5f});
 
     // Create a character controller
-    PhysicsCharacter *player = physicsCreateCharacter(physicsWorld, {0.0f, 5.0f, 0.0f}, 0.5f, 2.0f);
+    PhysicsCharacter *player = physicsCreateCharacter(physicsWorld, {0.0f, 5.0f, 0.0f}, 0.5f, 0.5f);
 
     while (!WindowShouldClose())
     {
@@ -296,7 +335,7 @@ int main()
         sControlCharacter(player, dt);
         physicsUpdateCharacter(physicsWorld, player, dt);
 
-        // sControlFreecam(gameState);
+        sControlFreecam(gameState);
 
         // Spawn new sphere on key press
         if (IsKeyPressed(KEY_B))
@@ -315,7 +354,7 @@ int main()
                 physicsWorld,
                 Vector3Add(gameState.freeCam.camera.position, {0.0f, 2.0f, 0.0f}),
                 0.5f, 1.5f);
-            bodies.push_back({newCapsule, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 1.5f});
+            bodies.push_back({newCapsule, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 1.5f}); // This one is correct
         }
 
         // Draw
@@ -324,8 +363,8 @@ int main()
 
         BeginMode3D(gameState.freeCam.camera);
         DrawGrid(20, 1.0f);
-        sDrawPhysicsBodies(physicsWorld, bodies);
-        sDrawCharacter(player);
+        sDrawPhysicsBodies(physicsWorld, bodies, false);
+        sDrawCharacter(player, false);
         EndMode3D();
 
         DrawFPS(10, 10);

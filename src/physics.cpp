@@ -282,7 +282,7 @@ void physicsDestroyBody(PhysicsWorld *world, BodyID bodyId)
     world->bodyInterface->DestroyBody(bodyId);
 }
 
-PhysicsCharacter *physicsCreateCharacter(PhysicsWorld *world, Vector3 position, float radius, float height)
+PhysicsCharacter *physicsCreateCharacter(PhysicsWorld *world, Vector3 position, float radius, float halfHeight)
 {
     PhysicsCharacter *character = new PhysicsCharacter();
 
@@ -290,7 +290,7 @@ PhysicsCharacter *physicsCreateCharacter(PhysicsWorld *world, Vector3 position, 
     JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
 
     // Create capsule shape for character
-    settings->mShape = new JPH::CapsuleShape(height * 0.5f, radius);
+    settings->mShape = new JPH::CapsuleShape(halfHeight, radius);
     settings->mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
     settings->mMass = 70.0f; // 70kg
     settings->mMaxStrength = 100.0f;
@@ -373,4 +373,18 @@ Vector3 physicsCharacterGetUp(PhysicsCharacter *character)
 void physicsCharacterSetUp(PhysicsCharacter *character, Vector3 up)
 {
     character->character->SetUp(JPH::Vec3(up.x, up.y, up.z));
+}
+
+float physicsCharacterGetRadius(PhysicsCharacter *character)
+{
+    const JPH::Shape *shape = character->character->GetShape();
+    const JPH::CapsuleShape *capsule = static_cast<const JPH::CapsuleShape *>(shape);
+    return capsule->GetRadius();
+}
+
+float physicsCharacterGetHalfHeight(PhysicsCharacter *character)
+{
+    const JPH::Shape *shape = character->character->GetShape();
+    const JPH::CapsuleShape *capsule = static_cast<const JPH::CapsuleShape *>(shape);
+    return capsule->GetHalfHeightOfCylinder();
 }
