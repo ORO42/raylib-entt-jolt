@@ -1,3 +1,23 @@
+# About
+
+...
+
+# Features
+
+- **Jolt Physics:** ...
+
+# Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- A C++ compiler
+- CMake
+
+## Instal/Build/Run
+
+1. Clone the repo.
+2. Navigate to project folder
+
 ```
 mkdir build
 cd build
@@ -6,19 +26,12 @@ make
 ./emergent-command
 ```
 
-- Must clone vendor repos into vendor
+### VSCode
 
-`mkdir build && cd build && cmake .. && make && ./emergent-command`
-
-`make && ./emergent-command`
-
-- Make sure cpp version is set in `c_cpp_properties.json`
+Ensure correct C++ standard is set in `.vscode/c_cpp_properties.json` (e.g. `"cppStandard": "c++17",`)
 
 # TODO
 
-[ x ] Make capsule heights consistent
-[ x ] Fix character capsule drawing (should be same as capsule physics body drawing)
-[ ] Fix character controller jump
-[ ] Fix character controller move directions
-[ ] Fix when physics capsule is pushed, looks like its falling off an invisible object
 [ x ] Draw position debug markers
+[ ] Fix character controller move directions
+[ ] Fix character controller jump
