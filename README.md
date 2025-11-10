@@ -23,7 +23,7 @@ mkdir build
 cd build
 cmake ..
 make
-./emergent-command
+./raylib-entt-jolt
 ```
 
 ### VSCode

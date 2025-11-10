@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(emergent-command CXX) # Declare the project as C++
+project(raylib-entt-jolt CXX) # Declare the project as C++
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -98,25 +98,25 @@ file(GLOB_RECURSE GAME_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
-add_executable(emergent-command
+add_executable(raylib-entt-jolt
     ${GAME_SOURCES}
 )
 
 # *** IMPORTANT FIX: Ensure C++17 features are explicitly linked to the target ***
-target_compile_features(emergent-command PRIVATE cxx_std_17) 
+target_compile_features(raylib-entt-jolt PRIVATE cxx_std_17) 
 
-target_include_directories(emergent-command PRIVATE
+target_include_directories(raylib-entt-jolt PRIVATE
     src/include
     ${entt_SOURCE_DIR}/single_include
     ${JoltPhysics_SOURCE_DIR}/..
 )
 
-target_link_libraries(emergent-command PRIVATE
+target_link_libraries(raylib-entt-jolt PRIVATE
     raylib
     Jolt
 )
 
 # Platform-specific libraries
 if(UNIX AND NOT APPLE)
-    target_link_libraries(emergent-command PRIVATE m dl pthread rt X11)
+    target_link_libraries(raylib-entt-jolt PRIVATE m dl pthread rt X11)
 endif()

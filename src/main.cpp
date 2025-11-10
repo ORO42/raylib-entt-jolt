@@ -246,7 +246,7 @@ void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bod
 int main()
 {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE);
-    InitWindow(800, 450, "emergent-command");
+    InitWindow(800, 450, "raylib-entt-jolt");
     // SetTargetFPS(60);
     SetMousePosition(GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f);
     DisableCursor();
