@@ -44,7 +44,6 @@ enum class BodyType
 {
     Box,
     Sphere,
-    Capsule
 };
 
 // Simple struct to track physics bodies for rendering
@@ -239,51 +238,6 @@ void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bod
             }
             DrawCubeWiresV(pos, Vector3Scale(body.halfExtents, 2.0f), MAROON);
             break;
-
-        case BodyType::Capsule:
-        {
-            // Jolt's capsule: height parameter is HALF the cylinder height
-            // Total capsule height = 2 * halfHeight + 2 * radius
-            float halfHeight = body.height; // This is what Jolt stores
-
-            // debug after you get pos and have halfHeight and radius
-            float bottomY = pos.y - (halfHeight + body.radius);
-            float topY = pos.y + (halfHeight + body.radius);
-
-            if (solid)
-            {
-                // Draw cylinder body (the cylindrical portion between the hemispheres)
-                DrawCylinderEx(
-                    Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
-                    Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-                    body.radius, body.radius, 16, GREEN);
-
-                // Draw top hemisphere
-                DrawSphereEx(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-                             body.radius, 16, 8, GREEN);
-
-                // Draw bottom hemisphere
-                DrawSphereEx(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
-                             body.radius, 16, 8, GREEN);
-            }
-
-            // Draw wireframe
-            DrawCylinderWiresEx(
-                Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
-                Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-                body.radius, body.radius, 16, DARKGREEN);
-
-            DrawSphereWires(Vector3Add(pos, {0.0f, halfHeight, 0.0f}),
-                            body.radius, 8, 8, DARKGREEN);
-
-            DrawSphereWires(Vector3Add(pos, {0.0f, -halfHeight, 0.0f}),
-                            body.radius, 8, 8, DARKGREEN);
-
-            // draw small crosses at top and bottom of the capsule
-            DrawSphereWires({pos.x, bottomY, pos.z}, 0.05f, 4, 4, RED); // bottom
-            DrawSphereWires({pos.x, topY, pos.z}, 0.05f, 4, 4, RED);    // top
-            break;
-        }
         }
         DrawSphereWires(pos, 0.1f, 4, 4, ORANGE); // Draw position marker
     }
@@ -318,10 +272,6 @@ int main()
     JPH::BodyID sphere2 = physicsCreateDynamicSphere(physicsWorld, {-2.0f, 20.0f, 0.0f}, 0.7f);
     bodies.push_back({sphere2, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.7f, 0.0f});
 
-    // Create a test capsule
-    JPH::BodyID capsule1 = physicsCreateDynamicCapsule(physicsWorld, {-5.0f, 20.0f, 0.0f}, 0.5f, 0.5f);
-    bodies.push_back({capsule1, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 0.5f});
-
     // Create a character controller
     PhysicsCharacter *player = physicsCreateCharacter(physicsWorld, {0.0f, 5.0f, 0.0f}, 0.5f, 0.5f);
 
@@ -347,16 +297,6 @@ int main()
             bodies.push_back({newSphere, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.5f, 0.0f});
         }
 
-        // Spawn new capsule on key press
-        if (IsKeyPressed(KEY_C))
-        {
-            JPH::BodyID newCapsule = physicsCreateDynamicCapsule(
-                physicsWorld,
-                Vector3Add(gameState.freeCam.camera.position, {0.0f, 2.0f, 0.0f}),
-                0.5f, 1.5f);
-            bodies.push_back({newCapsule, BodyType::Capsule, {0.0f, 0.0f, 0.0f}, 0.5f, 1.5f}); // This one is correct
-        }
-
         // Draw
         BeginDrawing();
         ClearBackground(RAYWHITE);
@@ -369,8 +309,7 @@ int main()
 
         DrawFPS(10, 10);
         DrawText("Press B to spawn sphere", 10, 30, 20, DARKGRAY);
-        DrawText("Press C to spawn capsule", 10, 50, 20, DARKGRAY);
-        DrawText(TextFormat("Spheres spawned: %d", bodies.size() - 1), 10, 70, 20, DARKGRAY);
+        DrawText(TextFormat("Bodies spawned: %d", bodies.size() - 1), 10, 50, 20, DARKGRAY);
         sDrawFreeCamReticle();
         EndDrawing();
     }

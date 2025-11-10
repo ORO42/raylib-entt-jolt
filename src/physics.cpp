@@ -238,19 +238,6 @@ BodyID physicsCreateDynamicSphere(PhysicsWorld *world, Vector3 position, float r
     return bodyId;
 }
 
-BodyID physicsCreateDynamicCapsule(PhysicsWorld *world, Vector3 position, float radius, float halfHeight)
-{
-    CapsuleShapeSettings shapeSettings(halfHeight, radius);
-    ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
-    ShapeRefC shape = shapeResult.Get();
-
-    BodyCreationSettings bodySettings(shape, RVec3(position.x, position.y, position.z),
-                                      Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
-
-    BodyID bodyId = world->bodyInterface->CreateAndAddBody(bodySettings, EActivation::Activate);
-    return bodyId;
-}
-
 Vector3 physicsGetPosition(PhysicsWorld *world, BodyID bodyId)
 {
     RVec3 pos = world->bodyInterface->GetCenterOfMassPosition(bodyId);
