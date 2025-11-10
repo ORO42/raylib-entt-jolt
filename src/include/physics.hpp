@@ -104,3 +104,20 @@ float physicsCharacterGetRadius(PhysicsCharacter *character);
 
 // Get character shape half height (cylinder portion only, not including spherical caps)
 float physicsCharacterGetHalfHeight(PhysicsCharacter *character);
+
+// Raycast hit result
+struct PhysicsRaycastHit
+{
+    bool hit;           // Did the ray hit something?
+    JPH::BodyID bodyId; // ID of the body that was hit
+    Vector3 position;   // World position of hit point
+    Vector3 normal;     // Surface normal at hit point
+    float fraction;     // Fraction along ray where hit occurred (0.0 to 1.0)
+    float distance;     // Distance from ray origin to hit point
+};
+
+// Cast a ray and return the closest hit
+// origin: Start point of the ray
+// direction: Direction of the ray (will be normalized)
+// maxDistance: Maximum distance to check
+PhysicsRaycastHit physicsRaycast(PhysicsWorld *world, Vector3 origin, Vector3 direction, float maxDistance);

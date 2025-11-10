@@ -10,6 +10,8 @@
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
 
 #include <iostream>
 #include <thread>
@@ -387,4 +389,65 @@ float physicsCharacterGetHalfHeight(PhysicsCharacter *character)
     const JPH::Shape *shape = character->character->GetShape();
     const JPH::CapsuleShape *capsule = static_cast<const JPH::CapsuleShape *>(shape);
     return capsule->GetHalfHeightOfCylinder();
+}
+
+PhysicsRaycastHit physicsRaycast(PhysicsWorld *world, Vector3 origin, Vector3 direction, float maxDistance)
+{
+    PhysicsRaycastHit result;
+    result.hit = false;
+    result.bodyId = JPH::BodyID();
+    result.position = {0.0f, 0.0f, 0.0f};
+    result.normal = {0.0f, 1.0f, 0.0f};
+    result.fraction = 1.0f;
+    result.distance = maxDistance;
+
+    // Normalize direction
+    JPH::Vec3 dir(direction.x, direction.y, direction.z);
+    float length = dir.Length();
+    if (length < 0.0001f)
+        return result; // Invalid direction
+
+    dir = dir / length;
+
+    // Create ray
+    JPH::RRayCast ray;
+    ray.mOrigin = JPH::RVec3(origin.x, origin.y, origin.z);
+    ray.mDirection = dir * maxDistance;
+
+    // Raycast settings - ignore back faces for better performance
+    JPH::RayCastSettings rayCastSettings;
+    rayCastSettings.SetBackFaceMode(JPH::EBackFaceMode::IgnoreBackFaces);
+    // rayCastSettings.mTreatConvexAsSolid = true;
+
+    // Perform raycast
+    JPH::RayCastResult hit;
+    JPH::BodyID bodyId;
+
+    if (world->physicsSystem->GetNarrowPhaseQuery().CastRay(
+            ray,
+            hit,
+            world->physicsSystem->GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
+            world->physicsSystem->GetDefaultLayerFilter(Layers::MOVING)))
+    {
+        result.hit = true;
+        result.bodyId = hit.mBodyID;
+        result.fraction = hit.mFraction;
+        result.distance = maxDistance * hit.mFraction;
+
+        // Calculate hit position
+        JPH::RVec3 hitPos = ray.GetPointOnRay(hit.mFraction);
+        result.position = {(float)hitPos.GetX(), (float)hitPos.GetY(), (float)hitPos.GetZ()};
+
+        // Get surface normal at hit point using BodyLockRead
+        const JPH::BodyLockInterface &lock_interface = world->physicsSystem->GetBodyLockInterface();
+        JPH::BodyLockRead lock(lock_interface, hit.mBodyID);
+        if (lock.Succeeded())
+        {
+            const JPH::Body &body = lock.GetBody();
+            JPH::Vec3 hitNormal = body.GetWorldSpaceSurfaceNormal(hit.mSubShapeID2, hitPos);
+            result.normal = {hitNormal.GetX(), hitNormal.GetY(), hitNormal.GetZ()};
+        }
+    }
+
+    return result;
 }
