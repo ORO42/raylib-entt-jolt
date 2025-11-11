@@ -36,11 +36,11 @@ Ensure correct C++ standard is set in `.vscode/c_cpp_properties.json` (e.g. `"cp
 
 # TODO
 
-[ x ] Draw position debug markers
-[ ] Draw facing angle debug markers
-[ ] Fix character controller move directions
-[ ] Fix character controller jump
-[ ] Add functions for creating sensor bodies
-[ ] FPS rig with local Camera
-[ ] Ray-pick a character to assume control
-[ ] Minimal server/client with Enet
+- [ x ] Draw position debug markers
+- [ ] Draw facing angle debug markers
+- [ ] Fix character controller move directions
+- [ ] Fix character controller jump
+- [ ] Add functions for creating sensor bodies
+- [ ] FPS rig with local Camera
+- [ ] Ray-pick a character to assume control
+- [ ] Minimal server/client with Enet
