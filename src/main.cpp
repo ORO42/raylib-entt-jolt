@@ -384,6 +384,9 @@ int main()
 
         DrawFPS(10, 10);
         DrawText("Press B to spawn sphere", 10, 30, 20, DARKGRAY);
+        DrawText("WASD to move freecam", 10, 50, 20, DARKGRAY);
+        DrawText("Shift/Space to raise/lower freecam", 10, 70, 20, DARKGRAY);
+        DrawText("Right-Mouse to look around", 10, 90, 20, DARKGRAY);
         sDrawFreeCamReticle();
         EndDrawing();
     }
