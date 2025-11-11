@@ -8,7 +8,7 @@ Example integration of Jolt Physics, EnTT, and Raylib for a 3D game.
 - **EnTT:** ECS storage linking entities to physics bodies
 - **Raylib:** Rendering library that provides other common gamedev-related functions
 - **Physics Interpolation:** Update physics independent of framerate to ensure smooth visuals
-- **Data Driven:** Data driven/functional architecture
+- **Data Driven:** Data driven/functional design
 - **3D Freecam:** Fly through 3D space
 
 # Prerequisites
