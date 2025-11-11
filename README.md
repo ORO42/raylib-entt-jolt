@@ -36,7 +36,7 @@ Ensure correct C++ standard is set in `.vscode/c_cpp_properties.json` (e.g. `"cp
 
 # TODO
 
-- [ x ] Draw position debug markers
+- [x] Draw position debug markers
 - [ ] Draw facing angle debug markers
 - [ ] Fix character controller move directions
 - [ ] Fix character controller jump
