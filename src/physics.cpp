@@ -250,6 +250,22 @@ Quaternion physicsGetRotation(PhysicsWorld *world, BodyID bodyId)
     return {rot.GetX(), rot.GetY(), rot.GetZ(), rot.GetW()};
 }
 
+float physicsGetRadius(PhysicsWorld *world, BodyID bodyId)
+{
+    const Shape *shape = world->bodyInterface->GetShape(bodyId);
+    const SphereShape *sphere = static_cast<const SphereShape *>(shape);
+    return sphere->GetRadius();
+}
+
+// Get physics body half extends (for box shapes)
+Vector3 physicsGetHalfExtents(PhysicsWorld *world, BodyID bodyId)
+{
+    const Shape *shape = world->bodyInterface->GetShape(bodyId);
+    const BoxShape *box = static_cast<const BoxShape *>(shape);
+    Vec3 he = box->GetHalfExtent();
+    return {he.GetX(), he.GetY(), he.GetZ()};
+}
+
 void physicsSetVelocity(PhysicsWorld *world, BodyID bodyId, Vector3 velocity)
 {
     world->bodyInterface->SetLinearVelocity(bodyId, Vec3(velocity.x, velocity.y, velocity.z));
@@ -306,7 +322,7 @@ void physicsDestroyCharacter(PhysicsCharacter *character)
     if (character)
     {
         delete character->character;
-        delete character;
+        // delete character;
     }
 }
 

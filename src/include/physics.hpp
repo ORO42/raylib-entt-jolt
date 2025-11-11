@@ -52,6 +52,10 @@ Vector3 physicsGetPosition(PhysicsWorld *world, JPH::BodyID bodyId);
 // Get rotation of a body (as quaternion)
 Quaternion physicsGetRotation(PhysicsWorld *world, JPH::BodyID bodyId);
 
+float physicsGetRadius(PhysicsWorld *world, JPH::BodyID bodyId);
+
+Vector3 physicsGetHalfExtents(PhysicsWorld *world, JPH::BodyID bodyId);
+
 // Set linear velocity
 void physicsSetVelocity(PhysicsWorld *world, JPH::BodyID bodyId, Vector3 velocity);
 

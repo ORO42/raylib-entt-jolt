@@ -51,9 +51,6 @@ struct PhysicsBody
 {
     JPH::BodyID id;
     BodyType type;
-    Vector3 halfExtents; // For boxes
-    float radius;        // For spheres and capsules
-    float height;        // For capsules
 };
 
 void sControlFreecam(GameState &gameState)
@@ -197,6 +194,37 @@ void sDrawCharacter(PhysicsCharacter *character, bool solid)
     DrawSphereWires({pos.x, topY, pos.z}, 0.05f, 4, 4, RED);    // top
 }
 
+void sDrawPhysicsCharacters(PhysicsWorld *world, entt::registry &registry, bool solid)
+{
+    auto view = registry.view<PhysicsCharacter>();
+    for (auto entity : view)
+    {
+        PhysicsCharacter &character = view.get<PhysicsCharacter>(entity);
+        sDrawCharacter(&character, solid);
+    }
+}
+
+void sUpdatePhysicsCharacters(PhysicsWorld *world, entt::registry &registry, float deltaTime)
+{
+    auto view = registry.view<PhysicsCharacter>();
+    for (auto entity : view)
+    {
+        PhysicsCharacter &character = view.get<PhysicsCharacter>(entity);
+        physicsUpdateCharacter(world, &character, deltaTime);
+    }
+}
+
+void destroyPhysicsCharacters(entt::registry &registry)
+{
+    auto view = registry.view<PhysicsCharacter>();
+    for (auto entity : view)
+    {
+        PhysicsCharacter &character = view.get<PhysicsCharacter>(entity);
+        physicsDestroyCharacter(&character);
+        registry.remove<PhysicsCharacter>(entity);
+    }
+}
+
 void sDrawFreeCamReticle()
 {
     int windowWidth = GetScreenWidth();
@@ -208,10 +236,12 @@ void sDrawFreeCamReticle()
     DrawLineEx({center.x, center.y - halfLength}, {center.x, center.y + halfLength}, 1.0f, BLACK);
 }
 
-void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bodies, bool solid)
+void sDrawPhysicsBodies(PhysicsWorld *world, entt::registry &registry, bool solid)
 {
-    for (const auto &body : bodies)
+    auto view = registry.view<PhysicsBody>();
+    for (auto entity : view)
     {
+        const PhysicsBody &body = view.get<PhysicsBody>(entity);
         Vector3 pos = physicsGetPosition(world, body.id);
         Quaternion rot = physicsGetRotation(world, body.id);
 
@@ -226,21 +256,82 @@ void sDrawPhysicsBodies(PhysicsWorld *world, const std::vector<PhysicsBody> &bod
         case BodyType::Sphere:
             if (solid)
             {
-                DrawSphereEx(pos, body.radius, 16, 16, BLUE);
+                // DrawSphereEx(pos, 0.5f, 16, 16, BLUE);
+                DrawSphereEx(pos, physicsGetRadius(world, body.id), 16, 16, BLUE);
             }
-            DrawSphereWires(pos, body.radius, 16, 16, DARKBLUE);
+            DrawSphereWires(pos, physicsGetRadius(world, body.id), 8, 8, DARKBLUE);
             break;
 
         case BodyType::Box:
             if (solid)
             {
-                DrawCubeV(pos, Vector3Scale(body.halfExtents, 2.0f), RED);
+                DrawCubeV(pos, Vector3Scale(physicsGetHalfExtents(world, body.id), 2.0f), RED);
             }
-            DrawCubeWiresV(pos, Vector3Scale(body.halfExtents, 2.0f), MAROON);
+            DrawCubeWiresV(pos, Vector3Scale(physicsGetHalfExtents(world, body.id), 2.0f), MAROON);
             break;
         }
         DrawSphereWires(pos, 0.1f, 4, 4, ORANGE); // Draw position marker
     }
+}
+
+entt::entity getEntityFromBodyId(PhysicsWorld *world, JPH::BodyID bodyId)
+{
+    entt::entity entity = static_cast<entt::entity>(
+        world->bodyInterface->GetUserData(bodyId));
+    return entity;
+}
+
+entt::entity getEntityFromCharacter(PhysicsCharacter *character)
+{
+    entt::entity entity = static_cast<entt::entity>(
+        character->character->GetUserData());
+    return entity;
+}
+
+void createStaticBoxEntity(entt::registry &registry, PhysicsWorld *world, Vector3 position, Vector3 halfExtents)
+{
+    JPH::BodyID bodyId = physicsCreateStaticBox(world, position, halfExtents);
+
+    auto entity = registry.create();
+    registry.emplace<PhysicsBody>(entity, bodyId, BodyType::Box);
+
+    // Store entity in physics body user data
+    world->bodyInterface->SetUserData(bodyId, static_cast<JPH::uint64>(entity));
+}
+
+void createDynamicBoxEntity(entt::registry &registry, PhysicsWorld *world, Vector3 position, Vector3 halfExtents)
+{
+    JPH::BodyID bodyId = physicsCreateDynamicBox(world, position, halfExtents);
+
+    auto entity = registry.create();
+    registry.emplace<PhysicsBody>(entity, bodyId, BodyType::Box);
+
+    // Store entity in physics body user data
+    world->bodyInterface->SetUserData(bodyId, static_cast<JPH::uint64>(entity));
+}
+
+void createDynamicSphereEntity(entt::registry &registry, PhysicsWorld *world, Vector3 position, float radius)
+{
+    JPH::BodyID bodyId = physicsCreateDynamicSphere(world, position, radius);
+
+    auto entity = registry.create();
+    registry.emplace<PhysicsBody>(entity, bodyId, BodyType::Sphere);
+
+    // Store entity in physics body user data
+    world->bodyInterface->SetUserData(bodyId, static_cast<JPH::uint64>(entity));
+}
+
+void createCharacterEntity(entt::registry &registry, PhysicsWorld *world, Vector3 position, float radius, float halfHeight)
+{
+    PhysicsCharacter *character = physicsCreateCharacter(world, position, radius, halfHeight);
+
+    auto entity = registry.create();
+    registry.emplace<PhysicsCharacter>(entity, character->character);
+
+    // Store entity in physics character user data
+    character->character->SetUserData(static_cast<JPH::uint64>(entity));
+
+    character->character = nullptr; // Prevent double deletion
 }
 
 int main()
@@ -256,24 +347,12 @@ int main()
 
     // Initialize physics
     PhysicsWorld *physicsWorld = physicsInit();
-    std::vector<PhysicsBody> bodies;
 
     // Create floor
-    JPH::BodyID floorId = physicsCreateStaticBox(physicsWorld, {0.0f, -1.0f, 0.0f}, {50.0f, 1.0f, 50.0f});
-    bodies.push_back({floorId, BodyType::Box, {50.0f, 1.0f, 50.0f}, 0.0f, 0.0f});
+    createStaticBoxEntity(ecsState.registry, physicsWorld, {0.0f, -1.0f, 0.0f}, {50.0f, 1.0f, 50.0f});
 
-    // Create some test objects
-    JPH::BodyID sphere1 = physicsCreateDynamicSphere(physicsWorld, {0.0f, 10.0f, 0.0f}, 0.5f);
-    bodies.push_back({sphere1, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.5f, 0.0f});
-
-    JPH::BodyID box1 = physicsCreateDynamicBox(physicsWorld, {2.0f, 15.0f, 0.0f}, {0.5f, 0.5f, 0.5f});
-    bodies.push_back({box1, BodyType::Box, {0.5f, 0.5f, 0.5f}, 0.0f, 0.0f});
-
-    JPH::BodyID sphere2 = physicsCreateDynamicSphere(physicsWorld, {-2.0f, 20.0f, 0.0f}, 0.7f);
-    bodies.push_back({sphere2, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.7f, 0.0f});
-
-    // Create a character controller
-    PhysicsCharacter *player = physicsCreateCharacter(physicsWorld, {0.0f, 5.0f, 0.0f}, 0.5f, 0.5f);
+    // Create character
+    createCharacterEntity(ecsState.registry, physicsWorld, {0.0f, 0.5f, 0.0f}, 0.5f, 1.0f);
 
     while (!WindowShouldClose())
     {
@@ -282,19 +361,15 @@ int main()
         // Update
         physicsUpdate(physicsWorld, dt);
 
-        sControlCharacter(player, dt);
-        physicsUpdateCharacter(physicsWorld, player, dt);
+        // sControlCharacter(player, dt);
+        sUpdatePhysicsCharacters(physicsWorld, ecsState.registry, dt);
 
         sControlFreecam(gameState);
 
         // Spawn new sphere on key press
         if (IsKeyPressed(KEY_B))
         {
-            JPH::BodyID newSphere = physicsCreateDynamicSphere(
-                physicsWorld,
-                Vector3Add(gameState.freeCam.camera.position, {0.0f, 2.0f, 0.0f}),
-                0.5f);
-            bodies.push_back({newSphere, BodyType::Sphere, {0.0f, 0.0f, 0.0f}, 0.5f, 0.0f});
+            createDynamicSphereEntity(ecsState.registry, physicsWorld, gameState.freeCam.camera.position, 0.5f);
         }
 
         // Draw
@@ -303,19 +378,18 @@ int main()
 
         BeginMode3D(gameState.freeCam.camera);
         DrawGrid(20, 1.0f);
-        sDrawPhysicsBodies(physicsWorld, bodies, false);
-        sDrawCharacter(player, false);
+        sDrawPhysicsBodies(physicsWorld, ecsState.registry, false);
+        sDrawPhysicsCharacters(physicsWorld, ecsState.registry, false);
         EndMode3D();
 
         DrawFPS(10, 10);
         DrawText("Press B to spawn sphere", 10, 30, 20, DARKGRAY);
-        DrawText(TextFormat("Bodies spawned: %d", bodies.size() - 1), 10, 50, 20, DARKGRAY);
         sDrawFreeCamReticle();
         EndDrawing();
     }
 
     // Cleanup
-    physicsDestroyCharacter(player);
+    destroyPhysicsCharacters(ecsState.registry);
     physicsShutdown(physicsWorld);
     CloseWindow();
     return 0;
